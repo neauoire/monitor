@@ -4,7 +4,7 @@
 
 local midi_signal
 local viewport = { width = 128, height = 64, frame = 0 }
-local mods = { transpose = 0, channel = 0 }
+local mods = { transpose = 0, ch = 0 }
 
 
 -- Main
@@ -41,6 +41,12 @@ function key(id,state)
 end
 
 function enc(id,delta)
+  if id == 2 then
+    mods.ch = clamp(mods.ch + delta,0,15)
+  elseif id == 3 then
+    mods.transpose = clamp(mods.transpose + delta,-24,24)
+  end
+    
   redraw()
 end
 
@@ -101,13 +107,18 @@ function draw_octave(msg)
 end
 
 function draw_labels(msg)
+  screen.move(75,10)
+  screen.text_right('> ch'..(mods.ch + 1))
   if msg and msg.note then
-    -- screen.move(75,18)
-    -- screen.text_right(msg.note)
-    screen.move(5,18)
-    screen.text(note_to_name(msg.note)..math.floor(msg.note/12)..' '..msg.note)
     screen.move(5,10)
     screen.text('ch'..msg.ch)
+    screen.move(5,18)
+    screen.text(note_to_name(msg.note)..math.floor(msg.note/12)..' '..msg.note)
+    screen.move(75,18)
+    screen.text_right(note_to_name(msg.note+mods.transpose)..math.floor((msg.note+mods.transpose)/12)..' '..(msg.note+mods.transpose))
+  else
+    screen.move(75,18)
+    screen.text_right(mods.transpose)
   end
 end
 
