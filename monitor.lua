@@ -6,7 +6,6 @@ local midi_signal
 local viewport = { width = 128, height = 64, frame = 0 }
 local mods = { transpose = 0, ch = 0 }
 
-
 -- Main
 
 function init()
@@ -26,17 +25,23 @@ end
 
 function on_midi_event(data)
   msg = midi.to_msg(data)
+  traverse(msg)
   redraw(msg)
+end
+
+function traverse(msg)
+  if msg and msg.type == 'note_on' then
+    midi_signal:note_on(msg.note+mods.transpose,msg.vel,mods.ch+1)
+  else
+    midi_signal:note_off(msg.note+mods.transpose,msg.vel,mods.ch+1)
+  end
 end
 
 -- Interactions
 
 function key(id,state)
-  if state == 1 and midi_signal then
-    midi_signal.note_on(60,127)
-  elseif midi_signal then
-    midi_signal.note_off(60,127)
-  end
+  mods.ch = 0
+  mods.transpose = 0
   redraw()
 end
 
