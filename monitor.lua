@@ -2,7 +2,8 @@
 -- v1.0.0 @neauoire
 -- llllllll.co/t/norns-tutorial/23241
 
-local midi_signal
+local midi_signal_in
+local midi_signal_out
 local viewport = { width = 128, height = 64, frame = 0 }
 local mods = { transpose = 0, ch = 0 }
 
@@ -19,8 +20,9 @@ function init()
 end
 
 function connect()
-  midi_signal = midi.connect()
-  midi_signal.event = on_midi_event
+  midi_signal_in = midi.connect(1)
+  midi_signal_in.event = on_midi_event
+  midi_signal_out = midi.connect(2)
 end
 
 function on_midi_event(data)
@@ -31,9 +33,9 @@ end
 
 function traverse(msg)
   if msg and msg.type == 'note_on' then
-    midi_signal:note_on(msg.note+mods.transpose,msg.vel,mods.ch+1)
+    midi_signal_out:note_on(msg.note+mods.transpose,msg.vel,mods.ch+1)
   else
-    midi_signal:note_off(msg.note+mods.transpose,msg.vel,mods.ch+1)
+    midi_signal_out:note_off(msg.note+mods.transpose,msg.vel,mods.ch+1)
   end
 end
 
