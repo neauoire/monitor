@@ -4,18 +4,17 @@
 
 local midi_signal
 local viewport = { width = 128, height = 64, frame = 0 }
+local mods = { transpose = 0, channel = 0 }
+
 
 -- Main
 
 function init()
-  print('init')
   connect()
   -- Render Style
   screen.level(20)
   screen.aa(0)
   screen.line_width(1)
-  -- Center focus
-  reset()
   -- Render
   redraw()
 end
@@ -30,14 +29,9 @@ function on_midi_event(data)
   redraw(msg)
 end
 
-function reset()
-  print('reset')
-end
-
 -- Interactions
 
 function key(id,state)
-  print('key',id,state)
   if state == 1 and midi_signal then
     midi_signal.note_on(60,127)
   elseif midi_signal then
@@ -47,44 +41,28 @@ function key(id,state)
 end
 
 function enc(id,delta)
-  print('enc',id,delta)
   redraw()
 end
 
 -- Render
 
-function draw_labels()
-  line_height = 8
-  screen.level(1)
-  screen.move(5,viewport.height - (line_height * 1))
-  screen.text('note')
-  screen.move(5,viewport.height - (line_height * 2))
-  screen.text('ch')
-  screen.move(5,viewport.height - (line_height * 3))
-  screen.text('vel')
-  screen.move(5,viewport.height - (line_height * 4))
-  screen.text('type')
-end
-
 function draw_octave(msg)
   offset = { x = 5, y = 24 }
   template = { w = 10, h = 36, sw = 4, sh = 15 }
   
-  if msg then
-    tab.print(msg)
-    print(note_to_name(msg.note))
+  screen.level(20)
+  
+  if msg and msg.type == 'note_on' then
+    if msg.note % 12 == 0 then screen.rect(offset.x, offset.y, template.w, template.h) ; screen.fill() end
+    if msg.note % 12 == 2 then screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h) ; screen.fill() end
+    if msg.note % 12 == 4 then screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h) ; screen.fill() end
+    if msg.note % 12 == 5 then screen.rect(offset.x + (template.w*3), offset.y, template.w, template.h) ; screen.fill() end
+    if msg.note % 12 == 7 then screen.rect(offset.x + (template.w*4), offset.y, template.w, template.h) ; screen.fill() end
+    if msg.note % 12 == 9 then screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h) ; screen.fill() end
+    if msg.note % 12 == 11 then screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h) ; screen.fill() end
   end
   
-  if msg and msg.type == 'note_on' and msg.note % 12 == 0 then screen.rect(offset.x, offset.y, template.w, template.h) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 2 then screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 4 then screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 5 then screen.rect(offset.x + (template.w*3), offset.y, template.w, template.h) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 7 then screen.rect(offset.x + (template.w*4), offset.y, template.w, template.h) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 9 then screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 11 then screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h) ; screen.fill() end
-  
-  screen.level(20)
-  -- C
+  -- White
   screen.rect(offset.x, offset.y, template.w, template.h)
   screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h)
   screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h)
@@ -94,7 +72,7 @@ function draw_octave(msg)
   screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h)
   screen.stroke()
   
-  -- Sharps
+  -- Black
   screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh)
@@ -104,14 +82,16 @@ function draw_octave(msg)
   screen.fill()
   
   screen.level(20)
-  if msg and msg.type == 'note_on' and msg.note % 12 == 1 then screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 3 then screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 6 then screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 8 then screen.rect(offset.x + 47, offset.y, template.w - template.sw, template.h - template.sh) ;  screen.fill() end
-  if msg and msg.type == 'note_on' and msg.note % 12 == 10 then screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-
   
-  screen.level(20)
+  if msg and msg.type == 'note_on' then
+    if msg.note % 12 == 1 then screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if msg.note % 12 == 3 then screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if msg.note % 12 == 6 then screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if msg.note % 12 == 8 then screen.rect(offset.x + 47, offset.y, template.w - template.sw, template.h - template.sh) ;  screen.fill() end
+    if msg.note % 12 == 10 then screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+  end
+  
+  -- Black Outline
   screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh)
@@ -120,35 +100,21 @@ function draw_octave(msg)
   screen.stroke()
 end
 
--- function draw_event(event)
---   line_height = 8
---   screen.level(20)
---   if event.note then
---     screen.move(30,viewport.height - (line_height * 1))
---     screen.text(msg.note)
---   end
---   if event.ch then
---     screen.move(30,viewport.height - (line_height * 2))
---     screen.text(msg.ch)
---   end
---   if event.vel then
---     screen.move(30,viewport.height - (line_height * 3))
---     screen.text(msg.vel)
---   end
---   if event.type then
---     screen.move(30,viewport.height - (line_height * 4))
---     screen.text(msg.type)
---   end
--- end
+function draw_labels(msg)
+  if msg and msg.note then
+    -- screen.move(75,18)
+    -- screen.text_right(msg.note)
+    screen.move(5,18)
+    screen.text(note_to_name(msg.note)..math.floor(msg.note/12)..' '..msg.note)
+    screen.move(5,10)
+    screen.text('ch'..msg.ch)
+  end
+end
 
 function redraw(msg)
-  print('redraw')
   screen.clear()
-  -- draw_labels()
+  draw_labels(msg)
   draw_octave(msg)
-  if msg then
-    -- draw_event(msg)
-  end
   screen.stroke()
   screen.update()
 end
