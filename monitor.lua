@@ -66,13 +66,14 @@ function draw_octave(msg)
   screen.level(20)
   
   if msg and msg.type == 'note_on' then
-    if msg.note % 12 == 0 then screen.rect(offset.x, offset.y, template.w, template.h) ; screen.fill() end
-    if msg.note % 12 == 2 then screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h) ; screen.fill() end
-    if msg.note % 12 == 4 then screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h) ; screen.fill() end
-    if msg.note % 12 == 5 then screen.rect(offset.x + (template.w*3), offset.y, template.w, template.h) ; screen.fill() end
-    if msg.note % 12 == 7 then screen.rect(offset.x + (template.w*4), offset.y, template.w, template.h) ; screen.fill() end
-    if msg.note % 12 == 9 then screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h) ; screen.fill() end
-    if msg.note % 12 == 11 then screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h) ; screen.fill() end
+    outgoing_note = msg.note + mods.transpose
+    if outgoing_note % 12 == 0 then screen.rect(offset.x, offset.y, template.w, template.h) ; screen.fill() end
+    if outgoing_note % 12 == 2 then screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h) ; screen.fill() end
+    if outgoing_note % 12 == 4 then screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h) ; screen.fill() end
+    if outgoing_note % 12 == 5 then screen.rect(offset.x + (template.w*3), offset.y, template.w, template.h) ; screen.fill() end
+    if outgoing_note % 12 == 7 then screen.rect(offset.x + (template.w*4), offset.y, template.w, template.h) ; screen.fill() end
+    if outgoing_note % 12 == 9 then screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h) ; screen.fill() end
+    if outgoing_note % 12 == 11 then screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h) ; screen.fill() end
   end
   
   -- White
@@ -97,11 +98,11 @@ function draw_octave(msg)
   screen.level(20)
   
   if msg and msg.type == 'note_on' then
-    if msg.note % 12 == 1 then screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-    if msg.note % 12 == 3 then screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-    if msg.note % 12 == 6 then screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-    if msg.note % 12 == 8 then screen.rect(offset.x + 47, offset.y, template.w - template.sw, template.h - template.sh) ;  screen.fill() end
-    if msg.note % 12 == 10 then screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if outgoing_note % 12 == 1 then screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if outgoing_note % 12 == 3 then screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if outgoing_note % 12 == 6 then screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+    if outgoing_note % 12 == 8 then screen.rect(offset.x + 47, offset.y, template.w - template.sw, template.h - template.sh) ;  screen.fill() end
+    if outgoing_note % 12 == 10 then screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
   end
   
   -- Black Outline
