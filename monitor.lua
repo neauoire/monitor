@@ -1,11 +1,12 @@
 -- scriptname: Monitor
 -- v1.0.0 @neauoire
--- llllllll.co/t/norns-tutorial/23241
+-- llllllll.co/t/monitor/23273
 
 local midi_signal_in
 local midi_signal_out
 local viewport = { width = 128, height = 64, frame = 0 }
 local mods = { transpose = 0, ch = 0 }
+local keys_down = {}
 
 -- Main
 
@@ -34,8 +35,10 @@ end
 function traverse(msg)
   if msg and msg.type == 'note_on' then
     midi_signal_out:note_on(msg.note+mods.transpose,msg.vel,mods.ch+1)
+    keys_down[msg.note % 12] = true
   else
     midi_signal_out:note_off(msg.note+mods.transpose,msg.vel,mods.ch+1)
+    keys_down[msg.note % 12] = false
   end
 end
 
@@ -53,30 +56,24 @@ function enc(id,delta)
   elseif id == 3 then
     mods.transpose = clamp(mods.transpose + delta,-24,24)
   end
-    
   redraw()
 end
 
 -- Render
 
-function draw_octave(msg)
+function draw_octave()
   offset = { x = 5, y = 24 }
   template = { w = 10, h = 36, sw = 4, sh = 15 }
-  
+  -- White Keys Down
   screen.level(20)
-  
-  if msg and msg.type == 'note_on' then
-    outgoing_note = msg.note + mods.transpose
-    if outgoing_note % 12 == 0 then screen.rect(offset.x, offset.y, template.w, template.h) ; screen.fill() end
-    if outgoing_note % 12 == 2 then screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h) ; screen.fill() end
-    if outgoing_note % 12 == 4 then screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h) ; screen.fill() end
-    if outgoing_note % 12 == 5 then screen.rect(offset.x + (template.w*3), offset.y, template.w, template.h) ; screen.fill() end
-    if outgoing_note % 12 == 7 then screen.rect(offset.x + (template.w*4), offset.y, template.w, template.h) ; screen.fill() end
-    if outgoing_note % 12 == 9 then screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h) ; screen.fill() end
-    if outgoing_note % 12 == 11 then screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h) ; screen.fill() end
-  end
-  
-  -- White
+  if keys_down[0] then screen.rect(offset.x, offset.y, template.w, template.h) ; screen.fill() end
+  if keys_down[2] then screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h) ; screen.fill() end
+  if keys_down[4] then screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h) ; screen.fill() end
+  if keys_down[5] then screen.rect(offset.x + (template.w*3), offset.y, template.w, template.h) ; screen.fill() end
+  if keys_down[7] then screen.rect(offset.x + (template.w*4), offset.y, template.w, template.h) ; screen.fill() end
+  if keys_down[9] then screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h) ; screen.fill() end
+  if keys_down[11] then screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h) ; screen.fill() end
+  -- White Keys Outline
   screen.rect(offset.x, offset.y, template.w, template.h)
   screen.rect(offset.x + (template.w*1), offset.y, template.w, template.h)
   screen.rect(offset.x + (template.w*2), offset.y, template.w, template.h)
@@ -85,8 +82,7 @@ function draw_octave(msg)
   screen.rect(offset.x + (template.w*5), offset.y, template.w, template.h)
   screen.rect(offset.x + (template.w*6), offset.y, template.w, template.h)
   screen.stroke()
-  
-  -- Black
+  -- Black Keys Mask
   screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh)
@@ -94,18 +90,14 @@ function draw_octave(msg)
   screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh)
   screen.level(0)
   screen.fill()
-  
+  -- Black Keys Down
   screen.level(20)
-  
-  if msg and msg.type == 'note_on' then
-    if outgoing_note % 12 == 1 then screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-    if outgoing_note % 12 == 3 then screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-    if outgoing_note % 12 == 6 then screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-    if outgoing_note % 12 == 8 then screen.rect(offset.x + 47, offset.y, template.w - template.sw, template.h - template.sh) ;  screen.fill() end
-    if outgoing_note % 12 == 10 then screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
-  end
-  
-  -- Black Outline
+  if keys_down[1] then screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+  if keys_down[3] then screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+  if keys_down[6] then screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+  if keys_down[8] then screen.rect(offset.x + 47, offset.y, template.w - template.sw, template.h - template.sh) ;  screen.fill() end
+  if keys_down[10] then screen.rect(offset.x + 57, offset.y, template.w - template.sw, template.h - template.sh) ; screen.fill() end
+  -- Black Keys Outline
   screen.rect(offset.x + 7, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 17, offset.y, template.w - template.sw, template.h - template.sh)
   screen.rect(offset.x + 37, offset.y, template.w - template.sw, template.h - template.sh)
@@ -133,7 +125,7 @@ end
 function redraw(msg)
   screen.clear()
   draw_labels(msg)
-  draw_octave(msg)
+  draw_octave()
   screen.stroke()
   screen.update()
 end
