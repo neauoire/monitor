@@ -1,6 +1,11 @@
--- scriptname: Monitor
--- v1.0.0 @neauoire
--- llllllll.co/t/monitor/23273
+--  
+--   ////\\\\
+--   ////\\\\  MONITOR
+--   ////\\\\  BY NEAUOIRE
+--   \\\\////
+--   \\\\////  MIDI UTILITY
+--   \\\\////
+--
 
 local midi_signal_in
 local midi_signal_out
@@ -13,7 +18,7 @@ local keys_down = {}
 function init()
   connect()
   -- Render Style
-  screen.level(20)
+  screen.level(15)
   screen.aa(0)
   screen.line_width(1)
   -- Render
