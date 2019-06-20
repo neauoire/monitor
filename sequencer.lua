@@ -12,7 +12,8 @@ local midi_signal_out
 local viewport = { width = 128, height = 64, frame = 0 }
 local root = 60
 local pattern = { length = 6, cells = {} }
-local focus = { id = 1, sect = 1, is_playing= true }
+local focus = { id = 1, sect = 1 }
+local playhead = { id = 1, sect = 1, is_playing= true }
 
 -- Main
 
@@ -36,19 +37,29 @@ end
 
 function on_midi_event(data)
   msg = midi.to_msg(data)
-  tab.print(msg)
+  root = msg.note
   redraw()
 end
 
 function run()
-  if focus.is_playing ~= true then return end
-  focus.id = (viewport.frame % pattern.length) + 1
+  if playhead.is_playing ~= true then return end
+  playhead.id = (viewport.frame % pattern.length) + 1
   viewport.frame = viewport.frame + 1
   redraw()
 end
 
-function get_mod()
-  return 1
+function get_mod(id,sect)
+  id = id or playhead.id
+  sect = sect or playhead.sect
+  return pattern.cells[id][sect]
+end
+
+function get_sect(id)
+  return math.floor(viewport.frame/pattern.length) % pattern.cells[id].sect
+end
+
+function get_sect_width(id)
+  return get_sect(id) * (4/pattern.cells[id].sect)
 end
 
 function get_input()
@@ -56,44 +67,34 @@ function get_input()
 end
 
 function get_output()
-  return 61
+  return root + get_mod()
 end
 
 function reset_cells()
   pattern.cells = {}
-  pattern.cells[1]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[2]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[3]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[4]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[5]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[6]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[7]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[8]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[9]  = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[10] = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[11] = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[12] = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[13] = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[14] = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[15] = { sect = 1, content = { 0,0,0,0 } }
-  pattern.cells[16] = { sect = 1, content = { 0,0,0,0 } }
+  pattern.cells[1]  = { 0 }
+  pattern.cells[2]  = { 0 }
+  pattern.cells[3]  = { 0 }
+  pattern.cells[4]  = { 0 }
+  pattern.cells[5]  = { 0 }
+  pattern.cells[6]  = { 0 }
+  pattern.cells[7]  = { 0 }
+  pattern.cells[8]  = { 0 }
+  pattern.cells[9]  = { 0 }
+  pattern.cells[10] = { 0 }
+  pattern.cells[11] = { 0 }
+  pattern.cells[12] = { 0 }
+  pattern.cells[13] = { 0 }
+  pattern.cells[14] = { 0 }
+  pattern.cells[15] = { 0 }
+  pattern.cells[16] = { 0 }
   mod_cell(2)
 end
 
-function set_cell(id,content)
-  pattern.cells[id].content = content
-end
-
-function get_mod(id,sect)
-  return pattern.cells[id].content[sect]
-end
-
 function mod_cell(id,sect,size)
-  pattern.cells[id].sect = 2
-  pattern.cells[id].content[1] = 1
-  pattern.cells[id].content[2] = 1
-  pattern.cells[id].content[3] = 2
-  pattern.cells[id].content[4] = 2
+  
+  pattern.cells[id] = { 1, 2}
+  pattern.cells[id+1] = { 1, 2, 1, 3}
 end
 
 -- Interactions
@@ -111,10 +112,21 @@ end
 
 -- Render
 
-function draw_cell_content(id,sect,x,y)
+function draw_cell_content(id,x,y)
   screen.level(15)
-  screen.pixel((x+(sect*2))-1,y+7-get_mod(id,sect))
-  screen.pixel((x+(sect*2))-2,y+7-get_mod(id,sect))
+  if #pattern.cells[id] == 1 then
+    for sect = 1,8 do screen.pixel(x-1+sect,y+7+get_mod(id,1)) end
+  end
+  if #pattern.cells[id] == 2 then
+    for sect = 1,4 do screen.pixel(x-1+sect,y+7-get_mod(id,1)) end
+    for sect = 1,4 do screen.pixel(x-1+4+sect,y+7-get_mod(id,2)) end
+  end
+  if #pattern.cells[id] == 4 then
+    for sect = 1,2 do screen.pixel(x-1+sect,y+7-get_mod(id,1)) end
+    for sect = 1,2 do screen.pixel(x-1+2+sect,y+7-get_mod(id,2)) end
+    for sect = 1,2 do screen.pixel(x-1+4+sect,y+7-get_mod(id,3)) end
+    for sect = 1,2 do screen.pixel(x-1+6+sect,y+7-get_mod(id,4)) end
+  end
   screen.fill()
 end
 
@@ -125,15 +137,13 @@ function draw_cell(id,x,y)
   _x = (x * 9) + 3 + 8
   _y = (y * 9) + 7 + 8
   -- Background
-  if id == focus.id then
+  if id == playhead.id then
     screen.level(1)
     screen.rect(_x,_y,8,8)
     screen.fill()
   end
   -- Content
-  for sect = 1,4 do
-    draw_cell_content(id,sect,_x,_y)
-  end
+  draw_cell_content(id,_x,_y)
 end
 
 function draw_sequencer()
@@ -143,19 +153,15 @@ function draw_sequencer()
 end
 
 function draw_labels()
-  _input = get_input()
-  _output = get_output()
   screen.level(15)
   screen.move(60,22)
   screen.text('?')
   screen.move(60,31)
   screen.text('hello')
   screen.move(60,40)
-  screen.text(focus.id)
-  
-  note = get_output()
+  screen.text(playhead.id..' mod: '..get_mod())
   screen.move(60,49)
-  screen.text(note_to_format(_input)..' > '..note_to_format(_output))
+  screen.text(note_to_format(get_input())..' > '..note_to_format(get_output()))
 end
 
 function redraw()
@@ -204,7 +210,7 @@ end
 -- Timer
 
 re = metro.init()
-re.time = 0.25
+re.time = 1.25
 re.event = function()
   run()
 end
