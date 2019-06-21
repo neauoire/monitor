@@ -115,6 +115,8 @@ function mod_length(delta)
       pattern.cells[focus.id] = { pattern.cells[focus.id][1] }
     end
   end
+  focus.id = clamp(focus.id,1, pattern.length)
+  focus.sect = clamp(focus.sect, 1, #get_cell(focus.id))
 end
 
 -- Helpers
