@@ -10,8 +10,8 @@ Enjoy!
 
 ### Monitor Controls
 
-- **Knob 2**, change output channel.
-- **Knob 3**, transpose outgoing note.
+- `Knob 2`, change output channel.
+- `Knob 3`, transpose outgoing note.
 
 ### Sequencer Controls
 
