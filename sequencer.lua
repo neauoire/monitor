@@ -61,9 +61,6 @@ end
 function get_mod(id,sect)
   id = id or playhead.id
   sect = sect or playhead.sect
-  if get_cell(id)[sect] == nil then
-    print(id,sect)
-  end
   return get_cell(id)[sect]
 end
 
@@ -225,11 +222,8 @@ function draw_labels()
   x_pad = 10
   screen.level(15)
   screen.move(template.offset.x+104,16)
-  -- print(get_input())
   incoming = note_to_format(get_input())
-  -- print(get_output())
   outgoing = note_to_format(get_output())
-  -- print(incoming,outgoing)
   screen.text_right(incoming..'>'..outgoing)
   if focus.mode == 0 then
     screen.move(template.offset.x+1,16)
@@ -262,8 +256,7 @@ end
 
 function note_offset(note,offset)
   if note_is_sharp(note) == true then notes = { 1,3,6,8,10 } else notes = { 0,2,4,5,7,9,11 } end
-  octave = math.floor(note/12)
-  target = (note % 12)
+  octave = note_to_octave(note)
   from = index_of(notes,note % 12)
   new_note = notes[((from+offset) % #notes)+1]
   new_octave = ((octave+math.floor((from+offset)/#notes))*12)
