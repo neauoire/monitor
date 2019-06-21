@@ -71,6 +71,12 @@ function set_bpm(bpm)
   re.time = sec
 end
 
+function mod_pattern_length(delta)
+  pattern.length = clamp(pattern.length + delta, 1, 8)
+  focus.id = clamp(focus.id,1,pattern.length)
+  focus.sect = 1
+end
+
 function mod_focus(delta)
   if (focus.sect == #get_cell(focus.id) and delta > 0) or (focus.sect == 1 and delta < 0) then
     focus.id = clamp(focus.id + delta,1, pattern.length)
@@ -118,17 +124,13 @@ function get_cell(id)
 end
 
 function get_sect(id)
-  return math.floor(viewport.frame/pattern.length) % #get_cell(id)
+  return math.floor(viewport.frame/pattern.length/id) % #get_cell(id)
 end
 
 function get_mod(id,sect)
   id = id or playhead.id
   sect = sect or playhead.sect
   return get_cell(id)[sect]
-end
-
-function get_sect_width(id)
-  return get_sect(id) * (4/#get_cell(id))
 end
 
 function get_input()
@@ -138,6 +140,18 @@ end
 function get_output()
   if get_mod() == -13 then return nil end
   return note_offset(get_input(),get_mod())
+end
+
+function get_overall_length()
+  sum = pattern.length
+  for id = 1,pattern.length do
+    sum = sum * #get_cell(id)
+  end
+  return sum
+end
+
+function get_overall_position()
+  return (viewport.frame % get_overall_length()) + 1
 end
 
 -- Interactions
@@ -163,7 +177,7 @@ function enc(id,delta)
     redraw()
     return
   end
-  if id == 1 then pattern.length = clamp(pattern.length + delta, 1, 8) end
+  if id == 1 then mod_pattern_length(delta) end
   if id == 2 then mod_focus(delta) end
   if id == 3 then mod_sect(focus.id,focus.sect,delta) end
   redraw()
@@ -178,7 +192,7 @@ function draw_sequencer()
     cell_w = 12/#get_cell(id)
     -- Grid
     screen.level(5)
-    screen.pixel(_x,template.offset.y + 14)
+    screen.pixel(_x-1,template.offset.y + 14)
     screen.fill()
     -- Cell
     for sect_id = 1,#get_cell(id) do 
@@ -192,25 +206,31 @@ function draw_sequencer()
     if id == focus.id then 
       screen.level(15)
       screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 14)
-      screen.move(_x + ((focus.sect-1) * cell_w)-1,51)
+      screen.move(_x + ((focus.sect-1) * cell_w)-1,54)
       screen.text('^')
+      screen.text(delta_format(get_mod(focus.id,focus.sect)))
     end
     screen.fill()
   end
 end
 
 function draw_labels()
-  x_pad = 10
-  screen.level(15)
-  screen.move(template.offset.x+104,16)
+  -- Slow
+  position = get_overall_position()
+  length = get_overall_length()
   incoming = note_to_format(get_input())
   outgoing = note_to_format(get_output())
-  screen.text_right(incoming..'>'..outgoing)
+  -- Draw
+  screen.level(15)
+  screen.move(template.offset.x+104,16)
+  screen.text_right(incoming..' '..delta_format(get_mod(playhead.id,playhead.sect))..' '..outgoing)
   if focus.mode == 0 then
     screen.move(template.offset.x+1,16)
-    screen.text(playhead.id..''..pattern.length..':'..playhead.sect..''..#get_cell(playhead.id))
-    screen.move(template.offset.x+27,16)
-    screen.text(focus.id..''..pattern.length..':'..focus.sect..''..#get_cell(focus.id))
+    if length > 2048 then
+      screen.text(position)
+    else
+      screen.text(position..'/'..length)
+    end
   elseif focus.mode == 2 then
     screen.move(template.offset.x+1,16)
     screen.text('BPM')
@@ -222,26 +242,21 @@ function draw_labels()
     screen.move(template.offset.x+27,16)
     screen.text(#get_cell(focus.id))
   end
-  screen.move(template.offset.x+53,16)
-  if get_mod(focus.id,focus.sect) > 0 then
-    screen.text('+'..get_mod(focus.id,focus.sect))
-  else
-    screen.text(get_mod(focus.id,focus.sect))
-  end
+  -- Progress
+  distance = (position/length) * (pattern.length * (template.size.w+1))
+  screen.move(template.offset.x+1,template.offset.y + 15)
+  screen.line(template.offset.x+distance,template.offset.y + 15)
+  screen.stroke()
 end
 
 function redraw()
   screen.clear()
-  draw_sequencer()
   draw_labels()
+  draw_sequencer()
   screen.update()
 end
 
 -- Utils
-
-function clamp(val,min,max)
-  return val < min and min or val > max and max or val
-end
 
 function note_to_hz(note)
   return (440 / 32) * (2 ^ ((note - 9) / 12))
@@ -282,6 +297,14 @@ function index_of(list,value)
     if list[i] == value then return i end
   end
   return -1
+end
+
+function delta_format(value)
+  if value > 0 then return '+'..value else return value end
+end
+
+function clamp(val,min,max)
+  return val < min and min or val > max and max or val
 end
 
 -- Timer
