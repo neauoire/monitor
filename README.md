@@ -15,8 +15,9 @@ Enjoy!
 
 ### Sequencer Controls
 
-- `knob1`, change length.
-- `knob2`, change position.
-- `knob3`, change value.
+- `turn knob1`, change length.
+- `turn knob2`, change position.
+- `turn knob3`, change value.
 - `hold key2`, change BPM.
 - `hold key3`, change division.
+- `press midi key`, change root note.
