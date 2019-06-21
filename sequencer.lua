@@ -27,9 +27,18 @@ function init()
   screen.line_width(1)
   -- Create Cells
   reset_cells()
-  set_bpm(60)
+  set_bpm(120)
   re:start()
 end
+
+function run()
+  if playhead.is_playing ~= true then return end
+  playhead.id = (viewport.frame % pattern.length) + 1
+  playhead.sect = get_sect(playhead.id)+1
+  redraw()
+end
+
+-- Midi
 
 function connect()
   midi_signal_in = midi.connect(1)
@@ -45,7 +54,6 @@ end
 
 function release_note()
   if last_note == nil then return end
-  print('release',last_note)
   midi_signal_out:note_off(last_note,127,1)
   last_note = nil
 end
@@ -53,65 +61,20 @@ end
 function send_note()
   if last_note ~= nil then release_note() ; return end
   if get_output() == nil then return end
-  print('send',get_output())
   midi_signal_out:note_on(get_output(),127,1)
   last_note = get_output()
 end
 
-function run()
-  if playhead.is_playing ~= true then return end
-  playhead.id = (viewport.frame % pattern.length) + 1
-  playhead.sect = get_sect(playhead.id)+1
-  redraw()
-end
-
-function get_cell(id)
-  return pattern.cells[id]
-end
-
-function get_sect(id)
-  return math.floor(viewport.frame/pattern.length) % #get_cell(id)
-end
-
-function get_mod(id,sect)
-  id = id or playhead.id
-  sect = sect or playhead.sect
-  return get_cell(id)[sect]
-end
-
-function get_sect_width(id)
-  return get_sect(id) * (4/#get_cell(id))
-end
-
-function get_input()
-  return pattern.root
-end
-
-function get_output()
-  if get_mod() == -13 then return nil end
-  return note_offset(get_input(),get_mod())
-end
-
 function move(delta)
-  if delta == 1 then
-    if focus.sect == #get_cell(focus.id) then
-      move_cell(delta)
-    else
-      move_sect(delta)
-    end
-  end
-  
-  if delta == -1 then
-    if focus.sect == 1 then
-      move_cell(delta)
-    else
-      move_sect(delta)
-    end
+  if focus.sect == #get_cell(focus.id) or focus.sect == 1 then
+    move_cell(delta)
+  else
+    move_sect(delta)
   end
 end
 
 function set_bpm(bpm)
-  sec = 60 / (bpm*4)
+  sec = 60 / (bpm*2)
   re.time = sec
 end
 
@@ -134,12 +97,10 @@ function reset_cells()
   pattern.cells[6]  = { 0 }
   pattern.cells[7]  = { 0 }
   pattern.cells[8]  = { 0 }
-  mod_cell(2)
 end
 
-function mod_cell(id,sect,size)
-  pattern.length = 2
-  pattern.cells[id] = { 1, 2, 0 }
+function mod_sect(id,sect,delta)
+  pattern.cells[id][sect] = clamp(pattern.cells[id][sect] + delta,-13,12)
 end
 
 function mod_length(delta)
@@ -169,6 +130,35 @@ function mod_bpm(delta)
   set_bpm(playhead.bpm)
 end
 
+-- Helpers
+
+function get_cell(id)
+  return pattern.cells[id]
+end
+
+function get_sect(id)
+  return math.floor(viewport.frame/pattern.length) % #get_cell(id)
+end
+
+function get_mod(id,sect)
+  id = id or playhead.id
+  sect = sect or playhead.sect
+  return get_cell(id)[sect]
+end
+
+function get_sect_width(id)
+  return get_sect(id) * (4/#get_cell(id))
+end
+
+function get_input()
+  return pattern.root
+end
+
+function get_output()
+  if get_mod() == -13 then return nil end
+  return note_offset(get_input(),get_mod())
+end
+
 -- Interactions
 
 function key(id,state)
@@ -192,15 +182,9 @@ function enc(id,delta)
     redraw()
     return
   end
-  if id == 1 then
-    pattern.length = clamp(pattern.length + delta, 1, 8)
-  end
-  if id == 2 then
-    move(delta)
-  end
-  if id == 3 then
-    pattern.cells[focus.id][focus.sect] = clamp(pattern.cells[focus.id][focus.sect] + delta,-13,12)
-  end
+  if id == 1 then pattern.length = clamp(pattern.length + delta, 1, 8) end
+  if id == 2 then move(delta) end
+  if id == 3 then mod_sect(focus.id,focus.sect,delta) end
   redraw()
 end
 
