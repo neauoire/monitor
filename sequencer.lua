@@ -10,7 +10,7 @@
 local midi_signal_in
 local midi_signal_out
 
-local viewport = { w = 128, h = 64, frame = 0 }
+local viewport = { w = 128, h = 64, frame = 1 }
 local pattern = { root = 60, length = 8, cells = {} }
 local focus = { id = 1, sect = 1, mode = 0 }
 local playhead = { id = 1, sect = 1, is_playing = true, bpm = 120 }
@@ -27,7 +27,7 @@ function init()
   screen.line_width(1)
   -- Create Cells
   reset_cells()
-  set_bpm(120)
+  set_bpm(60)
   re:start()
 end
 
@@ -43,12 +43,17 @@ function on_midi_event(data)
   redraw()
 end
 
-function release()
-  if last_key ~= nil then return end
+function release_note()
+  if last_note == nil then return end
+  print('release',last_note)
   midi_signal_out:note_off(last_note,127,1)
+  last_note = nil
 end
 
-function send()
+function send_note()
+  if last_note ~= nil then release_note() ; return end
+  if get_output() == nil then return end
+  print('send',get_output())
   midi_signal_out:note_on(get_output(),127,1)
   last_note = get_output()
 end
@@ -57,9 +62,6 @@ function run()
   if playhead.is_playing ~= true then return end
   playhead.id = (viewport.frame % pattern.length) + 1
   playhead.sect = get_sect(playhead.id)+1
-  viewport.frame = viewport.frame + 1
-  release()
-  send()
   redraw()
 end
 
@@ -109,7 +111,7 @@ function move(delta)
 end
 
 function set_bpm(bpm)
-  sec = 60 / (bpm*2)
+  sec = 60 / (bpm*4)
   re.time = sec
 end
 
@@ -320,7 +322,10 @@ end
 -- Timer
 
 re = metro.init()
-re.time = 0.25
+re.time = 0.5
 re.event = function()
+  release_note()
   run()
+  send_note()
+  viewport.frame = viewport.frame + 1
 end
