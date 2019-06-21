@@ -7,17 +7,14 @@
 --   \\\\////
 --
 
-engine.name = 'OutputTutorial'
-
 local midi_signal_in
 local midi_signal_out
-local viewport = { width = 128, height = 64, frame = 0 }
-local root = 60
-local pattern = { length = 6, cells = {} }
-local focus = { id = 1, sect = 1 }
-local playhead = { id = 1, sect = 1, is_playing= true }
 
-local mode = 0
+local viewport = { w = 128, h = 64, frame = 0 }
+local pattern = { root = 60, length = 8, cells = {} }
+local focus = { id = 1, sect = 1, mode = 0 }
+local playhead = { id = 1, sect = 1, is_playing = true, bpm = 120 }
+local template = { size = { w = 12, h = 24 }, offset = { x = 10, y = 30 } }
 
 -- Main
 
@@ -29,8 +26,8 @@ function init()
   screen.line_width(1)
   -- Create Cells
   reset_cells()
-  -- Render
-  redraw()
+  set_bpm(120)
+  re:start()
 end
 
 function connect()
@@ -41,7 +38,7 @@ end
 
 function on_midi_event(data)
   msg = midi.to_msg(data)
-  root = msg.note
+  pattern.root = msg.note
   redraw()
 end
 
@@ -50,7 +47,6 @@ function run()
   playhead.id = (viewport.frame % pattern.length) + 1
   playhead.sect = get_sect(playhead.id)+1
   viewport.frame = viewport.frame + 1
-  engine.hz(note_to_hz(get_output()))
   redraw()
 end
 
@@ -58,14 +54,17 @@ function get_cell(id)
   return pattern.cells[id]
 end
 
+function get_sect(id)
+  return math.floor(viewport.frame/pattern.length) % #get_cell(id)
+end
+
 function get_mod(id,sect)
   id = id or playhead.id
   sect = sect or playhead.sect
+  if get_cell(id)[sect] == nil then
+    print(id,sect)
+  end
   return get_cell(id)[sect]
-end
-
-function get_sect(id)
-  return math.floor(viewport.frame/pattern.length) % #get_cell(id)
 end
 
 function get_sect_width(id)
@@ -73,11 +72,11 @@ function get_sect_width(id)
 end
 
 function get_input()
-  return root
+  return pattern.root
 end
 
 function get_output()
-  return root + get_mod()
+  return pattern.root + get_mod()
 end
 
 function move(delta)
@@ -96,6 +95,12 @@ function move(delta)
       move_sect(delta)
     end
   end
+end
+
+function set_bpm(bpm)
+  sec = 60 / bpm
+  re.time = sec
+  print('bpm:'..bpm..'('..sec..'s)')
 end
 
 function move_cell(delta)
@@ -117,14 +122,6 @@ function reset_cells()
   pattern.cells[6]  = { 0 }
   pattern.cells[7]  = { 0 }
   pattern.cells[8]  = { 0 }
-  pattern.cells[9]  = { 0 }
-  pattern.cells[10] = { 0 }
-  pattern.cells[11] = { 0 }
-  pattern.cells[12] = { 0 }
-  pattern.cells[13] = { 0 }
-  pattern.cells[14] = { 0 }
-  pattern.cells[15] = { 0 }
-  pattern.cells[16] = { 0 }
   mod_cell(2)
 end
 
@@ -156,21 +153,21 @@ end
 function key(id,state)
   -- Swap modes
   if state == 0 then
-    mode = 0
+    focus.mode = 0
   else
-    mode = id
+    focus.mode = id
   end
   redraw()
 end
 
 function enc(id,delta)
-  if mode == 3 then
+  if focus.mode == 3 then
     mod_length(delta)
     redraw()
     return
   end
   if id == 1 then
-    pattern.length = clamp(pattern.length + delta, 1, 16)
+    pattern.length = clamp(pattern.length + delta, 1, 8)
   end
   if id == 2 then
     move(delta)
@@ -183,89 +180,46 @@ end
 
 -- Render
 
-function draw_cell_content(id,x,y)
-  if #get_cell(id) == 1 then
-    if id == playhead.id then screen.level(15) ; screen.rect(_x,_y,8,8) ; screen.fill() end
-    if id == focus.id then screen.level(1) ; screen.rect(_x,_y,8,8) ; screen.fill() end
-    screen.level(15)
-    for sect = 1,8 do screen.pixel(x-1+sect,y+7-get_mod(id,1)) end
-  end
-  if #get_cell(id) == 2 then
-    if id == playhead.id then screen.level(15) ; screen.rect(x+(get_sect(id)*4),_y,4,8) ; screen.fill() end
-    if id == focus.id then screen.level(1) ; screen.rect(x+((focus.sect-1)*4),_y,4,8) ; screen.fill() end
-    screen.level(15)
-    for sect = 1,4 do screen.pixel(x-1+sect,y+7-get_mod(id,1)) end
-    for sect = 1,4 do screen.pixel(x-1+4+sect,y+7-get_mod(id,2)) end
-  end
-  if #get_cell(id) == 4 then
-    if id == playhead.id then screen.level(15) ; screen.rect(x+(get_sect(id)*2),_y,2,8) ; screen.fill() end
-    if id == focus.id then screen.level(1) ; screen.rect(x+((focus.sect-1)*2),_y,2,8) ; screen.fill() end
-    screen.level(15)
-    for sect = 1,2 do screen.pixel(x-1+sect,y+7-get_mod(id,1)) end
-    for sect = 1,2 do screen.pixel(x-1+2+sect,y+7-get_mod(id,2)) end
-    for sect = 1,2 do screen.pixel(x-1+4+sect,y+7-get_mod(id,3)) end
-    for sect = 1,2 do screen.pixel(x-1+6+sect,y+7-get_mod(id,4)) end
-  end
-  screen.fill()
-end
-
-function draw_cell(id,x,y)
-  if (id-1) >= pattern.length then return end
-  x = (id-1) % 4
-  y = math.floor((id-1) / 4)
-  _x = (x * 9) + 3 + 8
-  _y = (y * 9) + 7 + 8
-  -- Content
-  draw_cell_content(id,_x,_y)
-end
-
 function draw_sequencer()
-  for id = 1,16 do
-    draw_cell(id)
+  for id = 1,pattern.length do
+    _x = ((id-1) * (template.size.w+1)) + 1 + template.offset.x
+    _y = template.offset.y
+    cell_w = 12/#get_cell(id)
+    -- Grid
+    screen.level(5)
+    screen.pixel(_x,template.offset.y + 14)
+    screen.fill()
+    -- Cell
+    for sect_id = 1,#get_cell(id) do 
+      if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
+      screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,1)
+      screen.fill()
+    end
+    -- Focus
+    if id == focus.id then 
+      screen.level(15)
+      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y - get_mod(id,focus.sect))
+      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 14)
+    end
+    screen.fill()
   end
 end
 
 function draw_labels()
   x_pad = 10
   screen.level(15)
-  if mode == 3 then
-    screen.move(60,22)
+  screen.move(template.offset.x+104,16)
+  screen.text_right(note_to_format(get_input())..'>'..note_to_format(get_output()))
+  if focus.mode == 0 then
+    screen.move(template.offset.x+1,16)
+    screen.text(playhead.id..''..pattern.length..':'..playhead.sect..''..#get_cell(playhead.id))
+  elseif focus.mode == 2 then
+    screen.move(template.offset.x+1,16)
     screen.text('DIV')
-  else
-    -- Focus
-    screen.move(60+(x_pad*0),22)
-    screen.text(focus.id)
-    screen.move(60+(x_pad*1),22)
-    screen.text(pattern.length)
-    screen.move(60+(x_pad*2),22)
-    screen.text(get_sect(focus.id)+1)
-    
-    screen.move(60+(x_pad*3),22) -- length
-    screen.text(#get_cell(focus.id))
-    screen.move(60+(x_pad*4),22) 
-    screen.text(get_mod(focus.id,focus.sect))
+  elseif focus.mode == 3 then
+    screen.move(template.offset.x+1,16)
+    screen.text('DIV+'..#get_cell(focus.id))
   end
-  -- 
-  screen.move(60+(x_pad*0),31)
-  screen.text(playhead.id)
-  screen.move(60+(x_pad*1),31)
-  screen.text(pattern.length)
-  screen.move(60+(x_pad*2),31)
-  screen.text(get_sect(playhead.id)+1)
-  
-  screen.move(60+(x_pad*3),31) -- length
-  screen.text(#get_cell(playhead.id))
-  screen.move(60+(x_pad*4),31)
-  screen.text(get_mod(playhead.id,playhead.sect))
-  -- 
-  screen.move(60,49)
-  screen.text(note_to_name(get_input()))
-  screen.move(60+(x_pad*1),49)
-  screen.text(note_to_octave(get_input()))
-  screen.move(60+(x_pad*2),49)
-  screen.text(note_to_name(get_output()))
-  screen.move(60+(x_pad*3),49)
-  screen.text(note_to_octave(get_output()))
 end
 
 function redraw()
@@ -283,6 +237,10 @@ end
 
 function note_to_hz(note)
   return (440 / 32) * (2 ^ ((note - 9) / 12))
+end
+
+function note_offset(root,offset)
+  return root+offset
 end
 
 function note_to_name(number)
@@ -318,4 +276,3 @@ re.time = 0.25
 re.event = function()
   run()
 end
-re:start()
