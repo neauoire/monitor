@@ -8,5 +8,15 @@ Enjoy!
 
 <img src='https://raw.githubusercontent.com/neauoire/monitor/master/PREVIEW.png?raw=true' width='450'/>
 
+### Monitor Controls
+
 - **Knob 2**, change output channel.
 - **Knob 3**, transpose outgoing note.
+
+### Sequencer Controls
+
+- `knob1`, change length.
+- `knob2`, change position.
+- `knob3`, change value.
+- `hold key2`, change BPM.
+- `hold key3`, change division.
