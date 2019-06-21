@@ -211,8 +211,9 @@ function draw_sequencer()
     -- Focus
     if id == focus.id then 
       screen.level(15)
-      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y - get_mod(id,focus.sect))
       screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 14)
+      screen.move(_x + ((focus.sect-1) * cell_w)-1,51)
+      screen.text('^')
     end
     screen.fill()
   end
@@ -228,12 +229,24 @@ function draw_labels()
   if focus.mode == 0 then
     screen.move(template.offset.x+1,16)
     screen.text(playhead.id..''..pattern.length..':'..playhead.sect..''..#get_cell(playhead.id))
+    screen.move(template.offset.x+27,16)
+    screen.text(focus.id..''..pattern.length..':'..focus.sect..''..#get_cell(focus.id))
   elseif focus.mode == 2 then
     screen.move(template.offset.x+1,16)
-    screen.text('BPM='..playhead.bpm)
+    screen.text('BPM')
+    screen.move(template.offset.x+27,16)
+    screen.text(playhead.bpm)
   elseif focus.mode == 3 then
     screen.move(template.offset.x+1,16)
-    screen.text('DIV='..#get_cell(focus.id))
+    screen.text('DIV')
+    screen.move(template.offset.x+27,16)
+    screen.text(#get_cell(focus.id))
+  end
+  screen.move(template.offset.x+53,16)
+  if get_mod(focus.id,focus.sect) > 0 then
+    screen.text('+'..get_mod(focus.id,focus.sect))
+  else
+    screen.text(get_mod(focus.id,focus.sect))
   end
 end
 
