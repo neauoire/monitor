@@ -221,11 +221,17 @@ function draw_labels()
   position = get_overall_position()
   length = get_overall_length()
   incoming = note_to_format(get_input())
+  offset = get_mod(playhead.id,playhead.sect)
   outgoing = note_to_format(get_output())
-  -- Draw
   screen.level(15)
+  -- Input Offset Output
   screen.move(template.offset.x+104,16)
-  screen.text_right(incoming..' '..delta_format(get_mod(playhead.id,playhead.sect))..' '..outgoing)
+  if offset ~= 0 then
+    screen.text_right(incoming..' '..delta_format(offset)..' '..outgoing)
+  else
+    screen.text_right(outgoing)
+  end
+  -- Top Left
   if focus.mode == 0 then
     screen.move(template.offset.x+1,16)
     if length > 2048 then
@@ -244,7 +250,7 @@ function draw_labels()
     screen.move(template.offset.x+27,16)
     screen.text(#get_cell(focus.id))
   end
-  -- Progress
+  -- Track Progress
   distance = (position/length) * (pattern.length * (template.size.w+1))
   screen.move(template.offset.x+1,template.offset.y + 15)
   screen.line(template.offset.x+distance,template.offset.y + 15)
@@ -268,7 +274,7 @@ function note_offset(note,offset)
   if note_is_sharp(note) == true then notes = { 1,3,6,8,10 } else notes = { 0,2,4,5,7,9,11 } end
   octave = note_to_octave(note)
   from = index_of(notes,note % 12)
-  new_note = notes[((from+offset) % #notes)+1]
+  new_note = notes[((from+offset) % #notes)]
   new_octave = ((octave+math.floor((from+offset)/#notes))*12)
   return new_octave + new_note
 end
