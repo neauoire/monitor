@@ -11,7 +11,7 @@ local midi_signal_in
 local midi_signal_out
 
 local viewport = { w = 128, h = 64, frame = 1 }
-local pattern = { root = 60, length = 8, cells = {} }
+local pattern = { root = 60, length = 8, cells = { {0},{0},{0},{0},{0},{0},{0},{0} } }
 local focus = { id = 1, sect = 1, mode = 0 }
 local playhead = { id = 1, sect = 1, is_playing = true, bpm = 120 }
 local template = { size = { w = 12, h = 24 }, offset = { x = 10, y = 30 } }
@@ -26,7 +26,6 @@ function init()
   screen.aa(0)
   screen.line_width(1)
   -- Create Cells
-  reset_cells()
   set_bpm(120)
   re:start()
 end
@@ -65,42 +64,29 @@ function send_note()
   last_note = get_output()
 end
 
-function move(delta)
-  if focus.sect == #get_cell(focus.id) or focus.sect == 1 then
-    move_cell(delta)
-  else
-    move_sect(delta)
-  end
-end
+-- Commands
 
 function set_bpm(bpm)
   sec = 60 / (bpm*2)
   re.time = sec
 end
 
-function move_cell(delta)
-  focus.id = clamp(focus.id + delta,1, pattern.length)
-  focus.sect = clamp(focus.sect, 1, #get_cell(focus.id))
-end
-
-function move_sect(delta)
-  focus.sect = clamp(focus.sect + delta, 1, #get_cell(focus.id))
-end
-
-function reset_cells()
-  pattern.cells = {}
-  pattern.cells[1]  = { 0 }
-  pattern.cells[2]  = { 0 }
-  pattern.cells[3]  = { 0 }
-  pattern.cells[4]  = { 0 }
-  pattern.cells[5]  = { 0 }
-  pattern.cells[6]  = { 0 }
-  pattern.cells[7]  = { 0 }
-  pattern.cells[8]  = { 0 }
+function mod_focus(delta)
+  if (focus.sect == #get_cell(focus.id) and delta > 0) or (focus.sect == 1 and delta < 0) then
+    focus.id = clamp(focus.id + delta,1, pattern.length)
+    focus.sect = clamp(focus.sect, 1, #get_cell(focus.id))
+  else
+    focus.sect = clamp(focus.sect + delta, 1, #get_cell(focus.id))
+  end
 end
 
 function mod_sect(id,sect,delta)
   pattern.cells[id][sect] = clamp(pattern.cells[id][sect] + delta,-13,12)
+end
+
+function mod_bpm(delta)
+  playhead.bpm = playhead.bpm + delta
+  set_bpm(playhead.bpm)
 end
 
 function mod_length(delta)
@@ -123,11 +109,6 @@ function mod_length(delta)
       pattern.cells[focus.id] = { pattern.cells[focus.id][1] }
     end
   end
-end
-
-function mod_bpm(delta)
-  playhead.bpm = playhead.bpm + delta
-  set_bpm(playhead.bpm)
 end
 
 -- Helpers
@@ -183,7 +164,7 @@ function enc(id,delta)
     return
   end
   if id == 1 then pattern.length = clamp(pattern.length + delta, 1, 8) end
-  if id == 2 then move(delta) end
+  if id == 2 then mod_focus(delta) end
   if id == 3 then mod_sect(focus.id,focus.sect,delta) end
   redraw()
 end
