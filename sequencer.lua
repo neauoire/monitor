@@ -15,6 +15,7 @@ local pattern = { root = 60, length = 8, cells = {} }
 local focus = { id = 1, sect = 1, mode = 0 }
 local playhead = { id = 1, sect = 1, is_playing = true, bpm = 120 }
 local template = { size = { w = 12, h = 24 }, offset = { x = 10, y = 30 } }
+local last_key = nil
 
 -- Main
 
@@ -42,11 +43,23 @@ function on_midi_event(data)
   redraw()
 end
 
+function release()
+  if last_key ~= nil then return end
+  midi_signal_out:note_off(last_note,127,1)
+end
+
+function send()
+  midi_signal_out:note_on(get_output(),127,1)
+  last_note = get_output()
+end
+
 function run()
   if playhead.is_playing ~= true then return end
   playhead.id = (viewport.frame % pattern.length) + 1
   playhead.sect = get_sect(playhead.id)+1
   viewport.frame = viewport.frame + 1
+  release()
+  send()
   redraw()
 end
 
