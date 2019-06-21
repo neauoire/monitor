@@ -201,16 +201,19 @@ function draw_sequencer()
       if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
       if get_sect(id)+1 ~= sect_id then screen.level(1) end
       if get_mod(id,sect_id) == -13 then screen.level(0) end
-      screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,1)
+      screen.rect(_x + ((sect_id-1) * cell_w)-1,template.offset.y - get_mod(id,sect_id),cell_w+1,1)
       screen.fill()
     end
     -- Focus
     if id == focus.id then 
       screen.level(15)
-      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 14)
+      screen.pixel(_x + ((focus.sect-1) * cell_w)-1,template.offset.y + 14)
       screen.move(_x + ((focus.sect-1) * cell_w)-1,54)
       screen.text('^')
-      screen.text(delta_format(get_mod(focus.id,focus.sect)))
+      value = get_mod(focus.id,focus.sect)
+      if value > -13 then
+        screen.text(delta_format(value))
+      end
     end
     screen.fill()
   end
@@ -274,7 +277,7 @@ function note_offset(note,offset)
   if note_is_sharp(note) == true then notes = { 1,3,6,8,10 } else notes = { 0,2,4,5,7,9,11 } end
   octave = note_to_octave(note)
   from = index_of(notes,note % 12)
-  new_note = notes[((from+offset) % #notes)]
+  new_note = notes[((from+offset-1) % #notes)+1]
   new_octave = ((octave+math.floor((from+offset)/#notes))*12)
   return new_octave + new_note
 end
