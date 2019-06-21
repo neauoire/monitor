@@ -76,7 +76,8 @@ function get_input()
 end
 
 function get_output()
-  return pattern.root + get_mod()
+  if get_mod() == -13 then return nil end
+  return note_offset(get_input(),get_mod())
 end
 
 function move(delta)
@@ -98,9 +99,8 @@ function move(delta)
 end
 
 function set_bpm(bpm)
-  sec = 60 / bpm
+  sec = 60 / (bpm*2)
   re.time = sec
-  print('bpm:'..bpm..'('..sec..'s)')
 end
 
 function move_cell(delta)
@@ -126,8 +126,8 @@ function reset_cells()
 end
 
 function mod_cell(id,sect,size)
-  pattern.cells[id] = { 1, 2}
-  pattern.cells[id+1] = { 1, 2, 1, 3}
+  pattern.length = 2
+  pattern.cells[id] = { 1, 2, 0 }
 end
 
 function mod_length(delta)
@@ -136,16 +136,25 @@ function mod_length(delta)
     if current == 1 then
       pattern.cells[focus.id] = { pattern.cells[focus.id][1], pattern.cells[focus.id][1] }
     elseif current == 2 then
+      pattern.cells[focus.id] = { pattern.cells[focus.id][1], pattern.cells[focus.id][2], pattern.cells[focus.id][1] }
+    elseif current == 3 then
       pattern.cells[focus.id] = { pattern.cells[focus.id][1], pattern.cells[focus.id][2], pattern.cells[focus.id][1], pattern.cells[focus.id][2] }
     end
   end
   if delta == -1 then
     if current == 4 then
+      pattern.cells[focus.id] = { pattern.cells[focus.id][1], pattern.cells[focus.id][2], pattern.cells[focus.id][1] }
+    elseif current == 3 then
       pattern.cells[focus.id] = { pattern.cells[focus.id][1], pattern.cells[focus.id][2] }
     elseif current == 2 then
       pattern.cells[focus.id] = { pattern.cells[focus.id][1] }
     end
   end
+end
+
+function mod_bpm(delta)
+  playhead.bpm = playhead.bpm + delta
+  set_bpm(playhead.bpm)
 end
 
 -- Interactions
@@ -161,6 +170,11 @@ function key(id,state)
 end
 
 function enc(id,delta)
+  if focus.mode == 2 then
+    mod_bpm(delta)
+    redraw()
+    return
+  end
   if focus.mode == 3 then
     mod_length(delta)
     redraw()
@@ -173,7 +187,7 @@ function enc(id,delta)
     move(delta)
   end
   if id == 3 then
-    pattern.cells[focus.id][focus.sect] = clamp(pattern.cells[focus.id][focus.sect] + delta,-12,12)
+    pattern.cells[focus.id][focus.sect] = clamp(pattern.cells[focus.id][focus.sect] + delta,-13,12)
   end
   redraw()
 end
@@ -192,6 +206,8 @@ function draw_sequencer()
     -- Cell
     for sect_id = 1,#get_cell(id) do 
       if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
+      if get_sect(id)+1 ~= sect_id then screen.level(1) end
+      if get_mod(id,sect_id) == -13 then screen.level(0) end
       screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,1)
       screen.fill()
     end
@@ -209,16 +225,21 @@ function draw_labels()
   x_pad = 10
   screen.level(15)
   screen.move(template.offset.x+104,16)
-  screen.text_right(note_to_format(get_input())..'>'..note_to_format(get_output()))
+  -- print(get_input())
+  incoming = note_to_format(get_input())
+  -- print(get_output())
+  outgoing = note_to_format(get_output())
+  -- print(incoming,outgoing)
+  screen.text_right(incoming..'>'..outgoing)
   if focus.mode == 0 then
     screen.move(template.offset.x+1,16)
     screen.text(playhead.id..''..pattern.length..':'..playhead.sect..''..#get_cell(playhead.id))
   elseif focus.mode == 2 then
     screen.move(template.offset.x+1,16)
-    screen.text('DIV')
+    screen.text('BPM='..playhead.bpm)
   elseif focus.mode == 3 then
     screen.move(template.offset.x+1,16)
-    screen.text('DIV+'..#get_cell(focus.id))
+    screen.text('DIV='..#get_cell(focus.id))
   end
 end
 
@@ -239,26 +260,14 @@ function note_to_hz(note)
   return (440 / 32) * (2 ^ ((note - 9) / 12))
 end
 
-function note_offset(root,offset)
-  return root+offset
-end
-
-function note_to_name(number)
-  id = number % 12
-  names = {}
-  names[0] = 'C'
-  names[1] = 'C#'
-  names[2] = 'D'
-  names[3] = 'D#'
-  names[4] = 'E'
-  names[5] = 'F'
-  names[6] = 'F#'
-  names[7] = 'G'
-  names[8] = 'G#'
-  names[9] = 'A'
-  names[10] = 'A#'
-  names[11] = 'B'
-  return names[id]
+function note_offset(note,offset)
+  if note_is_sharp(note) == true then notes = { 1,3,6,8,10 } else notes = { 0,2,4,5,7,9,11 } end
+  octave = math.floor(note/12)
+  target = (note % 12)
+  from = index_of(notes,note % 12)
+  new_note = notes[((from+offset) % #notes)+1]
+  new_octave = ((octave+math.floor((from+offset)/#notes))*12)
+  return new_octave + new_note
 end
 
 function note_to_octave(number)
@@ -266,7 +275,27 @@ function note_to_octave(number)
 end
 
 function note_to_format(number)
-  return note_to_name(number)..''..note_to_octave(number)
+  if number == nil then return 'MUTE' end
+  note = note_to_name(number)
+  octave = note_to_octave(number)
+  return note..''..octave
+end
+
+function note_to_name(number)
+  names = { 'C','C#','D','D#','E','F','F#','G','G#','A','A#','B' }
+  return names[(number % 12)+1]
+end
+
+function note_is_sharp(note)
+  notes = { false,true,false,true,false,false,true,false,true,false,true,false } 
+  return notes[(note % 12)+1]
+end
+
+function index_of(list,value)
+  for i=1,#list do
+    if list[i] == value then return i end
+  end
+  return -1
 end
 
 -- Timer
