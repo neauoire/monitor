@@ -11,7 +11,7 @@ local midi_signal_in
 local midi_signal_out
 
 local viewport = { w = 128, h = 64, frame = 1 }
-local pattern = { root = 60, length = 8, max_length = 8, cells = { {0},{0},{0},{0},{0},{0},{0},{0} } }
+local pattern = { root = 60, length = 4, max_length = 8, cells = { {0},{0},{0},{0},{0},{0},{0},{0} } }
 local focus = { id = 1, sect = 1, mode = 0 }
 local playhead = { id = 1, sect = 1, is_playing = true, bpm = 120 }
 local template = { size = { w = 12, h = 24 }, offset = { x = 8, y = 30 } }
@@ -187,17 +187,18 @@ end
 -- Render
 
 function draw_sequencer()
-  for id = 1,pattern.length do
-    _x = ((id-1) * (template.size.w+2)) + template.offset.x
+  screen.level(10)
+  for id = 1,8 do
+    _i = ((id-1) % pattern.length) + 1
+    _x = template.offset.x + ((id-1) * (template.size.w+2))
     _y = template.offset.y
-    cell_w = 12/#get_cell(id)
+    cell_w = 12/#get_cell(_i)
     -- Cell
-    for sect_id = 1,#get_cell(id) do 
-      if get_mod(id,sect_id) > -13 then
-        if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
-        if get_sect(id)+1 ~= sect_id then screen.level(1) end
-        screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,1)
-        screen.fill()  
+    for sect_id = 1,#get_cell(_i) do 
+      if get_mod(_i,sect_id) > -13 then
+        if playhead.id == _i and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
+        if get_sect(_i)+1 ~= sect_id then screen.level(1) end
+        screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(_i,sect_id),cell_w,1)
       end
     end
     screen.fill()
@@ -205,12 +206,11 @@ function draw_sequencer()
 end
 
 function draw_grid()
+  screen.level(5)
   for id = 1,pattern.length do
     _x = ((id-1) * (template.size.w+2)) + template.offset.x
     _y = template.offset.y
     cell_w = 12/#get_cell(id)
-    -- Grid
-    screen.level(5)
     screen.pixel(_x,template.offset.y + 16)
   end
   screen.fill()
