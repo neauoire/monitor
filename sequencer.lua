@@ -315,12 +315,10 @@ function note_offset(note,offset)
   if note_is_sharp(note) == true then notes = { 1,3,6,8,10 } else notes = { 0,2,4,5,7,9,11 } end
   octave = note_to_octave(note)
   from = index_of(notes,note % 12)
-  new_note = notes[((from+offset) % #notes)]
-  new_octave = ((octave+math.floor((from+offset)/#notes))*12)
-  if new_note == nil then
-    print('issue:',note,offset)
-    return 0
-  end
+  key = from+(offset-1)
+  key_round = (key%#notes)+1
+  new_note = notes[key_round]
+  new_octave = ((octave+math.floor((key)/#notes))*12)
   return new_octave + new_note
 end
 
