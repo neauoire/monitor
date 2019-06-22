@@ -187,7 +187,7 @@ end
 -- Render
 
 function draw_sequencer()
-  screen.level(10)
+  screen.level(5)
   for id = 1,8 do
     _i = ((id-1) % pattern.length) + 1
     _x = template.offset.x + ((id-1) * (template.size.w+2))
@@ -196,9 +196,13 @@ function draw_sequencer()
     -- Cell
     for sect_id = 1,#get_cell(_i) do 
       if get_mod(_i,sect_id) > -13 then
-        if playhead.id == _i and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
-        if get_sect(_i)+1 ~= sect_id then screen.level(1) end
+        if playhead.id == _i and get_sect(_i)+1 == sect_id then 
+          screen.level(15) 
+        elseif get_sect(_i)+1 ~= sect_id then 
+          screen.level(1) else screen.level(5) 
+        end
         screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(_i,sect_id),cell_w,1)
+        screen.fill()
       end
     end
     screen.fill()
@@ -211,7 +215,7 @@ function draw_grid()
     _x = ((id-1) * (template.size.w+2)) + template.offset.x
     _y = template.offset.y
     cell_w = 12/#get_cell(id)
-    screen.pixel(_x,template.offset.y + 16)
+    screen.pixel(_x,template.offset.y + 17)
   end
   screen.fill()
 end
@@ -237,7 +241,7 @@ function draw_progress()
   to = progress * width
   for x=1,width do
     if to > x and x % 2 == 0 then 
-      screen.pixel(template.offset.x+x,template.offset.y + 16)
+      screen.pixel(template.offset.x+x,template.offset.y + 17)
     end
   end
   screen.fill()
@@ -249,8 +253,8 @@ function draw_cursor()
     _x = ((id-1) * (template.size.w+2)) + template.offset.x
     cell_w = 12/#get_cell(id)
     if id == focus.id then 
-      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 16)
-      screen.move(_x + ((focus.sect-1) * cell_w)-1,54)
+      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 17)
+      screen.move(_x + ((focus.sect-1) * cell_w)-1,58)
       screen.text('^')
       screen.text(delta_format(get_mod(focus.id,focus.sect)))
     end
@@ -259,7 +263,7 @@ function draw_cursor()
 end
 
 function draw_labels()
-  -- Slow
+  top = 14
   position = get_overall_position()
   length = get_overall_length()
   incoming = note_to_format(get_input())
@@ -267,7 +271,7 @@ function draw_labels()
   outgoing = note_to_format(get_output())
   screen.level(15)
   -- Input Offset Output
-  screen.move(template.offset.x+104,16)
+  screen.move(template.offset.x+110,top)
   if offset ~= 0 then
     screen.text_right(incoming..' '..delta_format(offset)..' '..outgoing)
   else
@@ -275,21 +279,17 @@ function draw_labels()
   end
   -- Top Left
   if focus.mode == 0 then
-    screen.move(template.offset.x+1,16)
-    if length > 2048 then
-      screen.text(position)
-    else
-      screen.text(position..'/'..length)
-    end
+    screen.move(template.offset.x,top)
+    screen.text(position..'/'..length)
   elseif focus.mode == 2 then
-    screen.move(template.offset.x+1,16)
+    screen.move(template.offset.x+1,top)
     screen.text('BPM')
-    screen.move(template.offset.x+27,16)
+    screen.move(template.offset.x+27,top)
     screen.text(playhead.bpm)
   elseif focus.mode == 3 then
-    screen.move(template.offset.x+1,16)
+    screen.move(template.offset.x+1,top)
     screen.text('DIV')
-    screen.move(template.offset.x+27,16)
+    screen.move(template.offset.x+27,top)
     screen.text(#get_cell(focus.id))
   end
 end
