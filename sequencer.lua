@@ -191,39 +191,71 @@ function draw_sequencer()
     _x = ((id-1) * (template.size.w+2)) + template.offset.x
     _y = template.offset.y
     cell_w = 12/#get_cell(id)
-    -- Grid
-    screen.level(5)
-    screen.pixel(_x,template.offset.y + 15)
-    screen.fill()
     -- Cell
     for sect_id = 1,#get_cell(id) do 
-      if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
-      if get_sect(id)+1 ~= sect_id then screen.level(1) end
-      if get_mod(id,sect_id) == -13 then screen.level(0) end
-      screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,2)
-      screen.fill()
-    end
-    -- Focus
-    if id == focus.id then 
-      screen.level(15)
-      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 15)
-      screen.move(_x + ((focus.sect-1) * cell_w)-1,54)
-      screen.text('^')
-      screen.text(delta_format(get_mod(focus.id,focus.sect)))
+      if get_mod(id,sect_id) > -13 then
+        if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
+        if get_sect(id)+1 ~= sect_id then screen.level(1) end
+        screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,1)
+        screen.fill()  
+      end
     end
     screen.fill()
   end
-  -- Track Progress
+end
+
+function draw_grid()
+  for id = 1,pattern.length do
+    _x = ((id-1) * (template.size.w+2)) + template.offset.x
+    _y = template.offset.y
+    cell_w = 12/#get_cell(id)
+    -- Grid
+    screen.level(5)
+    screen.pixel(_x,template.offset.y + 16)
+  end
+  screen.fill()
+end
+
+function draw_activity()
+  screen.level(15)
+  for id = 1,pattern.length do
+    _x = ((id-1) * (template.size.w+2)) + template.offset.x
+    cell_w = 12/#get_cell(id)
+    for sect_id = 1,#get_cell(id) do 
+      if get_mod(id,sect_id) ~= -13 and get_sect(id)+1 == sect_id then
+        screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y + 14,cell_w,1)
+      end
+    end
+  end
+  screen.fill()
+end
+
+function draw_progress()
+  screen.level(1)
   progress = (position/length)
   width = (pattern.length * (template.size.w+2))-2
   to = progress * width
   for x=1,width do
-    screen.level(5)
     if to > x and x % 2 == 0 then 
-      screen.pixel(template.offset.x+x,template.offset.y + 15)
+      screen.pixel(template.offset.x+x,template.offset.y + 16)
     end
-    screen.fill()
   end
+  screen.fill()
+end
+
+function draw_cursor()
+  screen.level(15)
+  for id = 1,pattern.length do
+    _x = ((id-1) * (template.size.w+2)) + template.offset.x
+    cell_w = 12/#get_cell(id)
+    if id == focus.id then 
+      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 16)
+      screen.move(_x + ((focus.sect-1) * cell_w)-1,54)
+      screen.text('^')
+      screen.text(delta_format(get_mod(focus.id,focus.sect)))
+    end
+  end
+  screen.fill()
 end
 
 function draw_labels()
@@ -266,6 +298,10 @@ function redraw()
   screen.clear()
   draw_labels()
   draw_sequencer()
+  draw_activity()
+  draw_progress()
+  draw_grid()
+  draw_cursor()
   screen.update()
 end
 
