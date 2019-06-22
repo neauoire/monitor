@@ -11,10 +11,10 @@ local midi_signal_in
 local midi_signal_out
 
 local viewport = { w = 128, h = 64, frame = 1 }
-local pattern = { root = 60, length = 8, cells = { {0},{0},{0},{0},{0},{0},{0},{0} } }
+local pattern = { root = 60, length = 8, max_length = 8, cells = { {0},{0},{0},{0},{0},{0},{0},{0} } }
 local focus = { id = 1, sect = 1, mode = 0 }
 local playhead = { id = 1, sect = 1, is_playing = true, bpm = 120 }
-local template = { size = { w = 12, h = 24 }, offset = { x = 10, y = 30 } }
+local template = { size = { w = 12, h = 24 }, offset = { x = 8, y = 30 } }
 local last_key = nil
 
 -- Main
@@ -48,7 +48,6 @@ end
 function on_midi_event(data)
   msg = midi.to_msg(data)
   pattern.root = msg.note
-  redraw()
 end
 
 function release_note()
@@ -72,7 +71,7 @@ function set_bpm(bpm)
 end
 
 function mod_pattern_length(delta)
-  pattern.length = clamp(pattern.length + delta, 1, 8)
+  pattern.length = clamp(pattern.length + delta, 1, pattern.max_length)
   focus.id = clamp(focus.id,1,pattern.length)
   focus.sect = 1
 end
@@ -189,31 +188,39 @@ end
 
 function draw_sequencer()
   for id = 1,pattern.length do
-    _x = ((id-1) * (template.size.w+1)) + 1 + template.offset.x
+    _x = ((id-1) * (template.size.w+2)) + template.offset.x
     _y = template.offset.y
     cell_w = 12/#get_cell(id)
     -- Grid
     screen.level(5)
-    screen.pixel(_x-1,template.offset.y + 14)
+    screen.pixel(_x,template.offset.y + 15)
     screen.fill()
     -- Cell
     for sect_id = 1,#get_cell(id) do 
       if playhead.id == id and playhead.sect == sect_id then screen.level(15) else screen.level(5) end
       if get_sect(id)+1 ~= sect_id then screen.level(1) end
       if get_mod(id,sect_id) == -13 then screen.level(0) end
-      screen.rect(_x + ((sect_id-1) * cell_w)-1,template.offset.y - get_mod(id,sect_id),cell_w+1,1)
+      screen.rect(_x + ((sect_id-1) * cell_w),template.offset.y - get_mod(id,sect_id),cell_w,2)
       screen.fill()
     end
     -- Focus
     if id == focus.id then 
       screen.level(15)
-      screen.pixel(_x + ((focus.sect-1) * cell_w)-1,template.offset.y + 14)
+      screen.pixel(_x + ((focus.sect-1) * cell_w),template.offset.y + 15)
       screen.move(_x + ((focus.sect-1) * cell_w)-1,54)
       screen.text('^')
-      value = get_mod(focus.id,focus.sect)
-      if value > -13 then
-        screen.text(delta_format(value))
-      end
+      screen.text(delta_format(get_mod(focus.id,focus.sect)))
+    end
+    screen.fill()
+  end
+  -- Track Progress
+  progress = (position/length)
+  width = (pattern.length * (template.size.w+2))-2
+  to = progress * width
+  for x=1,width do
+    screen.level(5)
+    if to > x and x % 2 == 0 then 
+      screen.pixel(template.offset.x+x,template.offset.y + 15)
     end
     screen.fill()
   end
@@ -253,11 +260,6 @@ function draw_labels()
     screen.move(template.offset.x+27,16)
     screen.text(#get_cell(focus.id))
   end
-  -- Track Progress
-  distance = (position/length) * (pattern.length * (template.size.w+1))
-  screen.move(template.offset.x+1,template.offset.y + 15)
-  screen.line(template.offset.x+distance,template.offset.y + 15)
-  screen.stroke()
 end
 
 function redraw()
@@ -277,8 +279,12 @@ function note_offset(note,offset)
   if note_is_sharp(note) == true then notes = { 1,3,6,8,10 } else notes = { 0,2,4,5,7,9,11 } end
   octave = note_to_octave(note)
   from = index_of(notes,note % 12)
-  new_note = notes[((from+offset-1) % #notes)+1]
+  new_note = notes[((from+offset) % #notes)]
   new_octave = ((octave+math.floor((from+offset)/#notes))*12)
+  if new_note == nil then
+    print('issue:',note,offset)
+    return 0
+  end
   return new_octave + new_note
 end
 
