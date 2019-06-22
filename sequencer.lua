@@ -37,6 +37,10 @@ function run()
   redraw()
 end
 
+function cleanup()
+  release_note()
+end
+
 -- Midi
 
 function connect()
