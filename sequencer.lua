@@ -21,6 +21,7 @@ local last_key = nil
 
 function init()
   connect()
+  setup()
   -- Render Style
   screen.level(15)
   screen.aa(0)
@@ -28,6 +29,13 @@ function init()
   -- Create Cells
   set_bpm(120)
   re:start()
+end
+
+function setup()
+  params:add{type = "option", id = "playing", name = "Playing", options = {"yes","no"}, default = 1}
+  params:add{type = "number", id = "speed", name = "Speed", min = 40, max = 300, default = 120}
+  params:add{type = "option", id = "direction", name = "Direction", options = {"forward","backward"}, default = 1}
+  params:add{type = "number", id = "rate", name = "Rate", min = 1, max = 8, default = 1}
 end
 
 function run()
